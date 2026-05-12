@@ -514,6 +514,12 @@ function build(source_code)
     local body = {}
     local function E(s) body[#body+1] = s end
 
+    -- [FIX] 在输出代码最前面定义解码器函数,避免前向引用
+    -- 同时添加自定义错误信息帮助定位问题
+    E("--[[ 解码器函数 - 必须在最前定义 ]]")
+    E("local function _NB_d(b,k) local r={} for i=1,#b do r[i]=string.char((b[i]-k+256)%256) end return table.concat(r) end")
+    E("local function _NB_e(m) error('[Nebulae初始化错误] '..tostring(m)) end")
+
     -- ================================================================
     -- 预捕获块
     -- ================================================================
@@ -521,6 +527,7 @@ function build(source_code)
     E("local _GR=_G or (type(getfenv)=='function' and getfenv(0)) or {}")
     E("local " .. vPCLD .. "=" .. vPCRG .. "(_GR," .. _SE("load") ..
         ") or " .. vPCRG .. "(_GR," .. _SE("loadstring") .. ") or load or loadstring")
+    E("  if not " .. vPCLD .. " then _NB_e('load函数获取失败') end")
     E("local " .. vPCPC .. "=" .. vPCRG .. "(_GR," .. _SE("pcall") .. ") or pcall")
     E("local _PC_os_t=" .. vPCRG .. "(_GR," .. _SE("os") .. ")")
     E("local " .. vPCOC .. "=(_PC_os_t and type(_PC_os_t)=='table' and " ..
