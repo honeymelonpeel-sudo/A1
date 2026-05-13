@@ -1847,7 +1847,12 @@ if arg_file then
     local ok, res = pcall(build, content)
     if not ok then print("BUILD ERR: " .. tostring(res)) return end
     local out = CONFIG.OUTPUT_PREFIX .. arg_file
-    local wf = io.open(out, "wb"); wf:write(res); wf:close()
+    local wf = io.open(out, "wb")
+    if not wf then
+        wf = io.open(arg_file, "wb")
+        if not wf then print("ERR: CANNOT WRITE: " .. arg_file) return end
+    end
+    wf:write(res); wf:close()
     print("[OK] " .. out .. " (" .. #res .. " bytes)")
 else
     io.write("File: ")
@@ -1860,6 +1865,11 @@ else
     local ok, res = pcall(build, content)
     if not ok then print("BUILD ERR: " .. tostring(res)) return end
     local out = CONFIG.OUTPUT_PREFIX .. input
-    local wf = io.open(out, "wb"); wf:write(res); wf:close()
+    local wf = io.open(out, "wb")
+    if not wf then
+        wf = io.open(input, "wb")
+        if not wf then print("ERR: CANNOT WRITE: " .. input) return end
+    end
+    wf:write(res); wf:close()
     print("[OK] " .. out .. " (" .. #res .. " bytes)")
 end
