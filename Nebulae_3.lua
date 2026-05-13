@@ -723,7 +723,7 @@ function build(source_code)
 
     E("local function " .. vFMX .. "(idx,seed) return (idx*7919+seed*31)%65536 end")
 
-    local vRKH = V[160]
+    local vRKH = "_Nebulae_Hash_Function_"
     E("local function " .. vRKH .. "(k)")
     E("  local h,tmp=0,k")
     E("  for _=1,4 do")
@@ -1751,7 +1751,7 @@ function build(source_code)
     E("    local _rk_adj=(_rk+" .. vENVOFF .. "*" .. _mr(1,7) ..
         ")%65536")
     E("    if _rk_adj<100 then _rk_adj=_rk_adj+100 end")
-    local vRKH_rt = V[160]
+    local vRKH_rt = "_Nebulae_Hash_Function_"
     E("    " .. vVMSEL .. "=(" .. vRKH_rt .. "(_rk)==_expected_hash)")
     E("    if _pool_bc[_slot_idx] then")
     E("      pcall(" .. vVMEX .. ",_pool_bc[_slot_idx]," ..
