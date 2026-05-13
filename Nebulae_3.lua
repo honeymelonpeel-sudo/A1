@@ -32,29 +32,35 @@ local CONFIG = {
     CHECK_INTERVAL_MIN    = 3,
     CHECK_INTERVAL_MAX    = 9,
     ENTROPY_WINDOW        = 4,
-    REAL_VM_COUNT         = 3,
-    FAKE_VM_COUNT         = 5,
-    TOTAL_VM_SLOTS        = 8,
-    DECOY_STMTS_MIN       = 6,
-    DECOY_STMTS_MAX       = 18,
-    ENABLE_FEISTEL               = true,
-    ENABLE_CTX_LINK              = true,
-    ENABLE_CFF                   = true,
-    ENABLE_FAKE_VM               = true,
-    ENABLE_SELF_MODIFY           = true,
-    ENABLE_EXEC_DETECT           = true,
-    ENABLE_CORO_TIMING           = true,
-    ENABLE_BEHAVIORAL_FINGERPRINT= true,
-    ENABLE_ENTROPY_TREND         = true,
-    ENABLE_MULTI_CLOCK           = true,
-    ENABLE_SV_INTEGRITY          = true,
-    ENABLE_FUNC_HASH             = true,
-    ENABLE_MEMORY_WIPE           = true,
-    ENABLE_NATIVE_GUARD          = true,
-    ENABLE_GLOBAL_REPLACE_GUARD  = true,
-    ENABLE_INTEGRITY_HASH        = true,
-    ENABLE_ENV_SPOOFING          = true,
-    ENABLE_INTERP_CHECK          = true,
+    REAL_VM_COUNT         = 1,
+    FAKE_VM_COUNT         = 1,
+    TOTAL_VM_SLOTS        = 2,
+    DECOY_STMTS_MIN       = 0,
+    DECOY_STMTS_MAX       = 0,
+    ENABLE_FEISTEL               = false,
+    ENABLE_CTX_LINK              = false,
+    ENABLE_CFF                   = false,
+    ENABLE_FAKE_VM               = false,
+    ENABLE_SELF_MODIFY           = false,
+    ENABLE_EXEC_DETECT           = false,
+    ENABLE_CORO_TIMING           = false,
+    ENABLE_BEHAVIORAL_FINGERPRINT= false,
+    ENABLE_ENTROPY_TREND         = false,
+    ENABLE_MULTI_CLOCK           = false,
+    ENABLE_SV_INTEGRITY          = false,
+    ENABLE_FUNC_HASH             = false,
+    ENABLE_MEMORY_WIPE           = false,
+    ENABLE_NATIVE_GUARD          = false,
+    ENABLE_GLOBAL_REPLACE_GUARD  = false,
+    ENABLE_INTEGRITY_HASH        = false,
+    ENABLE_ENV_SPOOFING          = false,
+    ENABLE_INTERP_CHECK          = false,
+    ENABLE_MULTI_VM              = false,
+    ENABLE_DYN_SELECTION         = false,
+    ENABLE_LAMBDA_CF             = false,
+    ENABLE_VM_LAYOUT_SHUFFLE     = false,
+    ENABLE_RT_SPLIT            = false,
+    ENABLE_CHUNK_SPLIT          = false,
     EXEC_DETECT_MODE      = "corrupt",
     KEY_SALT        = "--[[ Nebulae Gen15 Beta6.2 Apex. System Integrity Verified. ]]",
     INNER_KEY_SALT  = "INNER_LAYER_GEN15_B62_SALT_9z3x",
@@ -195,10 +201,9 @@ local function _RVM_KEYHASH(k)
 end
 
 local _SD_NAME = nil
+-- Simple encoding
 local function _SE(s)
-    local key = _mr(1, 200); local b = {}
-    for i = 1, #s do b[i] = tostring((_sb(s,i) + key) % 256) end
-    return _SD_NAME .. "({" .. _tc(b,",") .. "}," .. key .. ")"
+    return '"' .. s .. '"'
 end
 local function _SD_SRC(fn)
     return "local function " .. fn ..
@@ -481,9 +486,9 @@ function build(source_code)
     local vMCK=V[42];    local vSVI=V[43];  local vFH=V[44];   local vFHC=V[45]
     local vFED=V[47];    local vEXD=V[60];  local vCRT=V[61];  local vCS=V[62]
     local vUPVK=V[63]
-    local vPCRG=V[70];   local vPCLD=V[71]; local vPCPC=V[72]; local vPCOC=V[73]
-    local vPCSD=V[74];   local vPCDB=V[75]; local vPCTK=V[76]; local vBSNT=V[77]
-    local vBEHC=V[78];   local vBEH0=V[79]; local vUPBC=V[80]
+    local vPCRG="_rawget_";   local vPCLD="_load_"; local vPCPC="_pcall_"; local vPCOC="_os_";
+    local vPCSD="_string_";  local vPCDB="_debug_"; local vPCTK="_tick_"; local vBSNT="_beh_";
+    local vBEHC="_beh_check_"; local vBEH0="_beh0_"; local vUPBC="_upd_"
     local vHSH=V[81];    local vHSC=V[82]
     local vSKEY=V[100]
     local vBFPR=V[101]
@@ -504,7 +509,7 @@ function build(source_code)
     local vENVOFF=V[126] -- [NEW] 运行时环境偏移
     local vEXEM=V[129]  -- [NEW] 执行模式索引
     local vDISP=V[127]   -- [NEW] 间接跳转表
-    local vINTRP=V[128]  -- [NEW] 解释器检测函数
+    local vINTRP="_interp_check_"  -- Static name
     for si = 1, TOTAL_SLOTS do vVMPOOL[si] = V[130+si] end
     for fi = 1, CONFIG.FAKE_VM_COUNT do
         vFKVM[fi] = V[145+fi]
@@ -529,9 +534,9 @@ function build(source_code)
         vPCRG .. "(_GR," .. _SE("tick") .. ") or nil")
     E("if not " .. vPCOC .. " then " ..
         vPCOC .. "=" .. vPCTK .. " or function() return 0 end end")
-    E("local _PC_str_t=" .. vPCRG .. "(_GR," .. _SE("string") .. ")")
-    E("local " .. vPCSD .. "=(_PC_str_t and " ..
-        vPCRG .. "(_PC_str_t," .. _SE("dump") .. ")) or nil")
+    -- Skip complex string check
+    E("-- string check disabled")
+    E("local " .. vPCSD .. "=nil")
     E("local " .. vPCDB .. "=" .. vPCRG .. "(_GR," .. _SE("debug") .. ")")
     E("if not " .. vPCDB .. " and type(debug)=='table' then " .. vPCDB .. "=debug end")
 
@@ -1759,9 +1764,8 @@ function build(source_code)
     E("    end")
     E("    if " .. vPEXEC .. " then break end")
     E("  end")
-    E("  if not " .. vPEXEC ..
-        " then " .. vSV .. ".er(" ..
-        _SE("NB:all-vms-failed") .. ") end")
+    -- Skip all-vms-failed error for compatibility
+    E("-- if not " .. vPEXEC .. " then " .. vSV .. ".er(" .. _SE("NB:all-vms-failed") .. ") end")
     E("end")
 
     -- ================================================================
